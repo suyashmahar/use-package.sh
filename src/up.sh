@@ -89,7 +89,66 @@ up_check_empty() {
 
 # * up_setup_sources_dir -- Setups the local cache for packages
 up_setup_sources_dir() {
-    mkdir -p UP_LOCAL_CACHE
+    mkdir -p "$UP_LOCAL_CACHE"
+
+    if [ ! -f "$UP_SOURCES_LIST" ]; then
+	touch "$UP_SOURCES_LIST"
+    fi
+}
+
+# * up_get_id_from_source -- Convert a use-package source to source id
+#
+# Example:
+#     'git:"https://github.com/suyashmahar/up_sources_stable.git"' -> 'git:up_sources_stable'
+up_get_id_from_source() {
+    local source=$1
+
+    local source_type="$(echo $source | grep -oE '(^network)|(^local)|(^git)')"
+    local source_addr="$(echo $source | sed -E 's/(^network:)|(^local:)|(^git:)//')"
+
+    local source_addr_clean="${source_addr%\"}"
+    source_addr_clean="${source_addr_clean#\"}"
+
+    local source_name=$(basename "${source_addr_clean}")
+    local source_id=""
+    
+    case "${source_type}" in
+        'git')
+	    source_id="$(echo $source_name | sed 's/.git//')"
+            ;;
+        'network')
+            ;;
+        'local')
+	    source_id="${source_name}"
+            ;;
+        *)
+	    up_fatal "Unknown protocol '$source_type'"
+            ;;
+    esac
+
+    echo "${source_type}:${source_id}"
+
+}
+
+# * up_check_cache_for_source -- Checks if a source exists locally
+#
+# Outputs:
+#     'exists': Indicates that the source already exists
+#     'missing': Indicates that the source doesn't exists locally
+up_check_cache_for_source() {
+    local source=$1
+
+    local source_id=$(up_get_id_from_source "$source")
+    local exists=$(cat "$UP_SOURCES_LIST" | grep -o "$source_id")
+
+    local result=""
+    if [ "$exists" != "" ]; then
+	result="exists"
+    else
+	result="missing"
+    fi
+
+    echo "$result"
 }
 
 # * up_check_source_dir -- Checks a source directory to make sure it is a up
@@ -103,15 +162,19 @@ up_check_source_dir() {
 # * up_get_source() -- Retreives local or network package sources
 up_get_source() {
     local source=$1
-
+    
     source_type="$(echo $source | grep -oE '(^network)|(^local)|(^git)')"
     source_addr="$(echo $source | sed -E 's/(^network:)|(^local:)|(^git:)//')"
-
     
     local source_addr_clean="${source_addr%\"}"
     source_addr_clean="${source_addr_clean#\"}"
     
     echo "Getting source of type '$source_type' from '$source_addr_clean'"
+
+    local local_avail=$(up_check_cache_for_source "$source")
+    if [ "$local_avail" = "exists" ]; then
+	up_fatal "Source '$source' already exists"
+    fi
 
     local source_name=$(basename "${source_addr_clean}")
     local dest_dir=""
@@ -119,6 +182,7 @@ up_get_source() {
     case "${source_type}" in
         'git')
 	    dest_dir="${UP_LOCAL_CACHE}/${source_name}"
+	    
 	    git clone "${source_addr_clean}" "${UP_LOCAL_CACHE}/${source_name}" >/dev/null 2>&1 || {
 		up_fatal "Cannot clone '$source_addr_clean', make sure you have access to the repository"
 	    }
@@ -131,15 +195,20 @@ up_get_source() {
 	    fi
 	    
 	    dest_dir="${UP_LOCAL_CACHE}/${source_name}.local"
+	    
 	    cp -r "${source_addr_clean}" "${dest_dir}"
             ;;
         *)
-	    up_fatal "Unkown protocol '$source_type'"
+	    up_fatal "Unknown protocol '$source_type'"
             ;;
     esac
+
+    local retrival_time=$(date +%s)
+    local source_id=$(up_get_id_from_source "$source")
+    echo "${retrival_time} ${source_id}" >> "${UP_SOURCES_LIST}"
 }
 
-# * up_load_sources -- Loads all the sources to up's local directory
+# * up_oad_sources -- Loads all the sources to up's local directory
 up_load_sources() {
     # Make sure everything is setup
     up_setup_sources_dir

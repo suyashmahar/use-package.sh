@@ -3,11 +3,14 @@
 . ./common.sh
 
 function run_up() {
-    HOME="$REAL_HOME" up_get_source \
-        'git:"https://github.com/suyashmahar/up_sources_stable.git"' #\
+    # HOME="$REAL_HOME" up_get_source \
+    #     'git:"https://github.com/suyashmahar/up_sources_stable.git"' #\
+    #     #>/dev/null
+    up_get_source \
+        'local:'$(pwd)'/assets/local_up_sources_test' #\
         #>/dev/null
     up_get_source \
-        'local:"./assets/local_up_sources_test"' #\
+        'local:'$(pwd)'/assets/local_up_sources_test' #\
         #>/dev/null
 }
 
