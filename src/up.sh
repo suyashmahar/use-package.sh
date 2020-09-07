@@ -156,6 +156,40 @@ up_check_cache_for_source() {
 up_check_source_dir() {
     local src_dir=$1
 
+    if [ ! -f "${src_dir}/packages.list}" ]; then
+	up_fatal "Directory '${src_dir}' does not have a 'packages.list' file"
+    fi
+
+    if [ ! -d "${src_dir}/packages" ]; then
+	up_fatal "Directory '${src_dir}' does not have a 'packages' sub directory"
+    fi
+
+    # Read every line of packages.list file and check if corresponding
+    # package file is valid
+    while read -r line; do
+	case "$line" in
+	    # Ignore comments
+	    \#*)
+		continue
+	    ;;
+	    # Anything that is not a comment
+	    *)
+		local pkg_details=$(printf "%s" "$a" | xargs -n 1 printf "%s\n")
+
+		# Get the first and second arguments
+		local pkg_name=$(echo "$pkg_details" | head -n1)
+		local pkg_desc=$(echo "$pkg_details" | head -n2 | tail -n1)
+
+		# Check if there is a corresponding package for this
+		# name
+		if [ ! -d "${src_dir}/packages/${pkg_name}" ]; then
+		    up_fatal "Package '${pkg_name}' is listed but does not have a package directory"
+		fi
+
+		# TODO: add other checks, e.g., pkg.up.sh file
+	    ;;
+	esac
+    done < "${src_dir}/packages.list"
     
 }
 
@@ -171,6 +205,7 @@ up_get_source() {
     
     echo "Getting source of type '$source_type' from '$source_addr_clean'"
 
+    # Check if this source already exists
     local local_avail=$(up_check_cache_for_source "$source")
     if [ "$local_avail" = "exists" ]; then
 	up_fatal "Source '$source' already exists"
@@ -206,6 +241,9 @@ up_get_source() {
     local retrival_time=$(date +%s)
     local source_id=$(up_get_id_from_source "$source")
     echo "${retrival_time} ${source_id}" >> "${UP_SOURCES_LIST}"
+
+    # Check for any configuration error in the source's directory
+    up_check_source_dir "${dest_dir}"    
 }
 
 # * up_oad_sources -- Loads all the sources to up's local directory
