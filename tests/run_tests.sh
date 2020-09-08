@@ -4,14 +4,14 @@
 
 dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 
-iter=0
-total_tests=$(ls "$dir/"*_test.sh | wc -l)
+iter=1
+total_tests=$(ls "$dir/"*_test.sh "$dir/"*/*_test.sh | wc -l)
 fail_count=0
 
-for test_file in "$dir/"*_test.sh; do
+for test_file in "$dir/"*_test.sh "$dir/"*/*_test.sh; do
     test_name=$(basename "$test_file" | sed 's/_test.sh//')
     
-    printf "[%2d/%2d] ${yellow}Testing ${cyan}${test_name}...${reset}" "$iter" "$total_tests"
+    printf "[%2d/%2d] ${yellow}Testing ${cyan}${test_name}...${reset}\n" "$iter" "$total_tests"
 
     "$SHELL" "$test_file"
 
