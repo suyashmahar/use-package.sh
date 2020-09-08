@@ -13,15 +13,18 @@ for test_file in "$dir/"*/*_test.sh; do
     echo "$test_file" | grep -q '_fail_test.sh'
     should_fail=$?
 
-    printf "[%d/%d] ${yellow}Testing ${cyan}${test_name}...${reset}" "$iter" "$total_tests"
+    progress=$(printf "[%d/%d] " "$iter" "$total_tests")
+    spacer=$(printf "%${#progress}s" "")
+    
+    printf "${progress}${yellow}Testing ${cyan}${test_name}...${reset}\n"
 
     "$SHELL" "$test_file"
 
     if [ "$?" = "1" -a "$should_fail" = "1" ] || [ "$?" = "0" -a "$should_fail" = "0" ]; then
         fail_count=$((fail_count+1))
-        printf "${red}failed${reset}\n"
+        printf "${spacer}${red}failed${reset}\n"
     else
-        printf "${green}passed${reset}\n"
+        printf "${spacer}${green}passed${reset}\n"
     fi
 
     iter=$((iter+1))

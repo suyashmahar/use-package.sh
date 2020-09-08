@@ -8,7 +8,7 @@ function run_up() {
         >/dev/null
     up_get_source \
         'local:'$(pwd)'/assets/local_up_sources_test' \
-        >/dev/null
+        >/dev/null 2>&1
 }
 
 function check_up() {

@@ -41,19 +41,25 @@ up_say() {
 up_verbose() {
     local msg="$1"
     if [ "$VERBOSE" = "1" ]; then
-	printf " VERB: ${msg}\n"
+	printf " VERB: ${msg}\n" >&2
     fi
 }
 
 up_warn() {
     local msg="$1"
-    printf " WARN: ${msg}\n"
+    printf " WARN: ${msg}\n" >&2
 }
 
 up_fatal() {
     local msg="$1"
-    printf "${UP_RED}FATAL: ${msg}${RESET}\n"
+    printf "${UP_RED}FATAL: ${msg}${RESET}\n" >&2
     exit 1
+}
+
+return_val() {
+    local value="$1"
+
+    echo "$value"
 }
 
 #################
@@ -237,7 +243,7 @@ up_check_source_dir() {
 
 # * up_get_source() -- Retreives local or network package sources
 up_get_source() {
-    local source=$1
+    local source="$1"
     
     source_type="$(echo $source | grep -oE '(^network)|(^local)|(^git)')"
     source_addr="$(echo $source | sed -E 's/(^network:)|(^local:)|(^git:)//')"
@@ -245,7 +251,7 @@ up_get_source() {
     local source_addr_clean="${source_addr%\"}"
     source_addr_clean="${source_addr_clean#\"}"
     
-    echo "Getting source of type '$source_type' from '$source_addr_clean'"
+    up_verbose "Getting source of type '$source_type' from '$source_addr_clean'"
 
     # Check if this source already exists
     local local_avail=$(up_check_cache_for_source "$source")
@@ -306,6 +312,115 @@ up_load_sources() {
     done
 }
 
+# * up_load_pkg -- Load a single package at the given path
+up_load_pkg_loc() {
+    local pkg_loc="$1"
+
+    up_pkg_name=$(basename "$file" | sed 's/.up.sh//g')
+
+    up_verbose "Working on package '${up_pkg_name}'"
+
+    __up_setup_env
+
+    . "$pkg_loc"
+
+    up_verbose "Calling init..."
+    up_init
+
+    up_verbose "Calling check..."
+    up_check
+
+    if ! __up_check_result; then
+	up_verbose "Check failed, trying install..."
+	up_install
+
+	# Reset the check accumulator
+	__up_check_result_reset
+	
+	up_verbose "Calling check again..."
+	up_check
+
+	if ! __up_check_result; then
+	    up_verbose "Install failed to setup environment, not trying anymore..."
+	    return 1
+	fi
+    fi
+
+    up_verbose "Calling config..."
+    up_config
+
+    up_verbose "Calling finally..."
+    up_finally
+
+    up_verbose "Done with $up_pkg_name"
+}
+
+# * up_find_package_in_source -- Finds a package in a cached source directory
+# Output:
+#     'missing': If this package was not found in any of the sources
+#     <path to package>: Path to the first latest version of the first package
+#                        found
+# TODO:
+#     Check @ref up_find_package
+up_find_package_in_source() {
+    local package_name="$1"
+    local source_id="$2"
+
+    up_verbose "Finding package '${package_name}' in source '${source_id}'"
+
+    local source_type="$(echo $source_id | cut -d ':' -f 1)"
+    local source_name="$(echo $source_id | cut -d ':' -f 2-)"
+
+    # Remove any quotes
+    source_name="${source_name%\"}"
+    source_name="${source_name#\"}"
+    
+    local source_dir="${UP_LOCAL_CACHE}/${source_name}.${source_type}"
+    local packages_list="${source_dir}/packages.list"
+    
+    if [ ! -f "${packages_list}" ]; then
+	up_fatal "Cannot find package list: '${packages_list}', is source corrupted?"
+    fi
+
+    local result="missing"
+    
+    while read -r line; do
+	if [ ! -z "$line" ]; then
+
+	    # Check if this entry matches the package we are searching
+	    local cur_name=$(echo "$line" | cut -d ' ' -f1)
+	    if [ "$cur_name" = "$package_name" ]; then
+		
+		# If we have a match, get the path of the package's
+		# up.sh file. Use the latest version for this
+		#
+		# Warn: up only supports upto four part version number
+		# (e.g., 1.0, 1.0.0, 1.0.0.0)
+		local package_dir="${source_dir}/packages/${package_name}"
+		local package_versions=$(ls -d "${package_dir}"/*/ \
+					     | sort -t '.' \
+						    -k 1,1 -k 2,2 -k 3,3 -k 4,4\
+						    -n)
+		local latest_version=$(echo "$package_versions" | tail -n1)
+		latest_version=$(basename "$latest_version")
+
+		up_verbose "Found version '${latest_version}'"
+		
+		local loader_file="${package_dir}/${latest_version}/contents/pkg.up.sh"
+		if [ ! -f "${loader_file}" ]; then
+		    up_fatal "Cannot find '${loader_file}', source corrupted?"
+		fi
+
+		result="${loader_file}"
+		
+		break
+	    fi
+	fi
+    done < "${packages_list}"
+
+    return_val "${result}"
+}
+
 # * up_find_package -- Finds a package in existing sources
 # Output:
 #     'missing': If this package was not found in any of the sources
@@ -315,12 +430,21 @@ up_load_sources() {
 #     1. Add source selection for packages with same name in different sources
 #     2. Add version selection for package with multiple versions
 up_find_package() {
-    while read -r line; do
-	# Right now everything after the first field in every line is
-	# expected to be a package id, in future when more fields will
-	# get added, things will be more complicated to parse.
-	local package_id=$(echo "$line" | cut -d " " -f 2-)
-	
-	up_verbose "Looking in package ${package_id}"
-    done < "${UP_SOURCES_LIST}"
+    local package_name="$1"
+    
+    local result="missing"
+    for arg; do
+	while read -r line; do
+	    # Right now everything after the first field in every line
+	    # is expected to be a package id, in future when more
+	    # fields will get added, things will be more complicated
+	    # to parse.
+	    local source_id=$(echo "$line" | cut -d " " -f 2-)
+	    
+	    up_verbose "Looking in source ${source_id}"
+	    result="$(up_find_package_in_source "${package_name}" "${source_id}")"
+	done < "${UP_SOURCES_LIST}"
+    done
+
+    return_val "${result}"
 }
