@@ -3,8 +3,10 @@
 . ./common.sh
 
 function run_up() {
-    up_get_source \
-        'local:'$(pwd)'/assets/local_up_sources_test' \
+    up_load_sources \
+        local:"$(pwd)/assets/local_up_sources_test" \
+	local:"$(pwd)/assets/local_up_sources_test" \
+        local:"$(pwd)/assets/local_up_sources_test" \
         >/dev/null
 }
 

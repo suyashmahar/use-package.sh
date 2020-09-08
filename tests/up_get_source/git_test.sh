@@ -4,15 +4,12 @@
 
 function run_up() {
     HOME="$REAL_HOME" up_get_source \
-        'git:"/home/s/git/up_sources_stable"' #\
-        #>/dev/null
+        'git:"/home/s/git/up_sources_stable"' \
+        >/dev/null
 }
 
 function check_up() {
-    local expected_hash="74b2f7c4f51b20e6c5805f8de4b89100"
-    local result_hash=$(md5sum "${HOME}/.use-package.sh/cache/sources.list" | awk '{ print $1 }')
-
-    if [ "$expected_hash" != "$result_hash" ]; then
+    if [ ! -d "${HOME}/.use-package.sh/cache/up_sources_stable" ]; then
         test_failed "$0"
     fi
 }

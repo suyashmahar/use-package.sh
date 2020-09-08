@@ -3,15 +3,14 @@
 . ./common.sh
 
 function run_up() {
-    up_get_source \
-        'local:'$(pwd)'/assets/local_up_sources_test' \
+    # Load the default test source
+    up_load_sources \
+        local:"$(pwd)/assets/local_up_sources_test" \
         >/dev/null
 }
 
 function check_up() {
-    if [ ! -d "${HOME}/.use-package.sh/cache/local_up_sources_test.local" ]; then
-        test_failed "$0"
-    fi
+    up_find_package "conda2"
 }
 
 # Perform all operations inside a fake home

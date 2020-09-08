@@ -8,7 +8,8 @@
 ## Helper ##
 ############
 
-#  Check if the terminal supports colors
+# Check if the terminal supports colors, if it is doesn't then disable
+# colors
 if [ -t 1 ]; then
     color_cnt=$(tput colors)
     if [ -n "$color_cnt" ] && [ $color_cnt -ge 8 ]; then
@@ -287,13 +288,39 @@ up_get_source() {
     up_check_source_dir "${dest_dir}"    
 }
 
-# * up_oad_sources -- Loads all the sources to up's local directory
+# * up_load_sources -- Loads all the sources to up's local directory
 up_load_sources() {
     # Make sure everything is setup
     up_setup_sources_dir
 
-    # for arg do
+    for arg do
+	local exists=$(up_check_cache_for_source "$arg")
+	up_verbose "Checking $arg ... exists=${exists}"
 
-    # done
+	if [ "${exists}" = "missing" ]; then
+	    up_verbose "Source missing, retrieving..."
+	    up_get_source "$arg"
+	else
+	    up_verbose "Source exists, skipping"
+	fi
+    done
+}
 
+# * up_find_package -- Finds a package in existing sources
+# Output:
+#     'missing': If this package was not found in any of the sources
+#     <path to package>: Path to the first latest version of the first package
+#                        found
+# TODO:
+#     1. Add source selection for packages with same name in different sources
+#     2. Add version selection for package with multiple versions
+up_find_package() {
+    while read -r line; do
+	# Right now everything after the first field in every line is
+	# expected to be a package id, in future when more fields will
+	# get added, things will be more complicated to parse.
+	local package_id=$(echo "$line" | cut -d " " -f 2-)
+	
+	up_verbose "Looking in package ${package_id}"
+    done < "${UP_SOURCES_LIST}"
 }

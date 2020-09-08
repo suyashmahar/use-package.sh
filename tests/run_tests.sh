@@ -5,17 +5,19 @@
 dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 
 iter=1
-total_tests=$(ls "$dir/"*_test.sh "$dir/"*/*_test.sh | wc -l)
+total_tests=$(ls "$dir/"*/*_test.sh | wc -l)
 fail_count=0
 
-for test_file in "$dir/"*_test.sh "$dir/"*/*_test.sh; do
-    test_name=$(basename "$test_file" | sed 's/_test.sh//')
-    
-    printf "[%2d/%2d] ${yellow}Testing ${cyan}${test_name}...${reset}\n" "$iter" "$total_tests"
+for test_file in "$dir/"*/*_test.sh; do
+    test_name=$(echo "$test_file" | sed 's/_test.sh//' | sed "s|$(pwd)/||")
+    echo "$test_file" | grep -q '_fail_test.sh'
+    should_fail=$?
+
+    printf "[%d/%d] ${yellow}Testing ${cyan}${test_name}...${reset}" "$iter" "$total_tests"
 
     "$SHELL" "$test_file"
 
-    if [ "$?" = "1" ]; then
+    if [ "$?" = "1" -a "$should_fail" = "1" ] || [ "$?" = "0" -a "$should_fail" = "0" ]; then
         fail_count=$((fail_count+1))
         printf "${red}failed${reset}\n"
     else
