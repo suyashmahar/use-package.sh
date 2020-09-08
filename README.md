@@ -1,3 +1,9 @@
+<p align="center">
+  <img height="200" src="assets.github/banner.svg">
+</p>
+
+[![GPLv3 license](https://img.shields.io/badge/License-GPLv3-blue.svg)](http://perso.crans.org/besson/LICENSE.html)
+
 # use-package.sh
 A package manager (sort of) for your shell script to keep your shellrc file clutter free.
 
