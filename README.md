@@ -43,18 +43,23 @@ up_load_package \
 
 3. (Optional) You can create your own packages and load them:
 <details>
-You can create your own packages using use-package's syntax. To create a new package, modify the following template on disk:
+  To create a new package, modify the <a href="examples/pkg.up.sh">package example</a>. and load it using the following command:
+  
+  ```shell
+  up_load_pkg_loc "/path/to/your/package"
+  ```
 </details>
 
 And, voila your .${SHELL}rc is ready!
 
-Your shell's rc file should look like:
+Your shell's rc file should look like:  
 insert image here
 
-*To have your own repository, check `docs/` for more details*
+*To create your own sources check the wiki!*
 
-### List of packages available with use-package.sh's default repository
-#### Common
+## Packages available
+The following packages are available in use-package.sh's [default respository](https://github.com/suyashmahar/up_sources_stable)
+%### Common
 * [conda3]()
 * [conda2]()
 * [cargo]()
@@ -66,13 +71,8 @@ insert image here
 #### Bash specific
 * [oh-my-bash]()
 
-## Creating new packages
-
-
-## I still have some questions
+## FAQ
 1. **I don't want to execute code from the internet**
-Sure thing, you can run use-package-setup.sh to do everything offline. This however will require few extra steps.
+Sure thing, you can run use-package-setup.sh to do everything offline. This however will require few extra steps, check the wiki for setting up your own source.
 2. **Does it support my shell?**
 use-package.sh is written ground up to be POSIX compliant. If your shell support POSIX commands, use-package.sh will work.
-3. **Why does use-package.sh have weird syntax**
-POSIX compliance meant that some sacrifices had to be made, this included avoiding the use of arrays.
