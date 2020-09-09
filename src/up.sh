@@ -30,6 +30,9 @@ if [ -t 1 ]; then
 	UP_LPURPLE=$(echo -en '\033[01;35m')
 	UP_LCYAN=$(echo -en '\033[01;36m')
 	UP_WHITE=$(echo -en '\033[01;37m')
+	UP_PRM_SPAC=60
+    else
+	UP_PRM_SPAC=40
     fi
 fi
 
@@ -296,7 +299,13 @@ __up_get_source() {
     case "${source_type}" in
         'git')
 	    dest_dir="${UP_LOCAL_CACHE}/${source_name}"
-	    
+
+	    # Append a '.git' at the end if source_name doesn't end with that
+	    if ! echo "$source_name"  | grep -Eq '.git$'; then
+		source_name="${source_name}.git"
+		dest_dir="${dest_dir}.git"
+	    fi
+
 	    git clone "${source_addr_clean}" "${UP_LOCAL_CACHE}/${source_name}" >/dev/null 2>&1 || {
 		up_fatal "Cannot clone '$source_addr_clean', make sure you have access to the repository"
 	    }
@@ -485,10 +494,38 @@ up_locate_pkg() {
 
 # * up_help -- Prints a help message
 up_help() {
-    local cmd_fmt="%-20s:%s"
-    printf "%s\n\n${cmd_fmt}" \
-	   "use-package.sh v${UP_VERSION} -- A package manager for shellrc files"\
-	   "up_locate_pkg <pkg name>" "Locates a package in the locally installed sources"
+    local cmd_fmt="        %-${UP_PRM_SPAC}s%s${UP_RESET}"
+    printf "${UP_PURPLE}use-package.sh v${UP_VERSION}${UP_RESET} -- A package manager for shellrc files\n"
+    printf "\n  Usage:\n"
+    printf "${cmd_fmt}\n${cmd_fmt}\n${cmd_fmt}\n${cmd_fmt}\n${cmd_fmt}\n" \
+	   "up_load_sources ${UP_CYAN}src [src [...] ]${UP_RESET}" "Retreives and saves specified source(s) locally" \
+	   "up_load_pkgs ${UP_CYAN}pkg [pkg [...] ]${UP_RESET}" "Loads specified package(s) from the locally installed sources" \
+	   "up_load_pkg_loc ${UP_CYAN}/path/to/pkg${UP_RESET}" "Load package located at the specified path. Path should point to a pkg.up.sh file." \
+	   "up_locate_pkg ${UP_CYAN}pkg${UP_RESET}" "Finds a package in the locally installed sources" \
+	   "up_help ${UP_CYAN}${UP_RESET}" "Show this message and exit"
+    
+    printf "\n  Example configuration:\n"
+    cat << EOF
+        # Setup use-package.sh
+        if [ ! -f "\$HOME/.use-package.sh/up.sh" ]; then
+            mkdir -p "\$HOME/.use-package.sh"
+            cp "/path/to/original/up.sh" "\$HOME/.use-package.sh/up.sh"
+        fi
+           
+        . "\$HOME/.use-package.sh/up.sh"
+           
+        # Load the packages
+        up_load_sources \\
+            git:"https://github.com/suyashmahar/up_sources_stable.git"
+    	   
+        up_load_pkgs \\
+            cargo
+EOF
+    printf "\n  More help:\n"
+    printf "      For more detailed documentation go to: https://github.com/suyashmahar/use-package.sh\n"
+    
+    printf "\n  License:\n"
+    printf "      (c) 2020 Suyash Mahar. use-package.sh, including this script is licensed under the terms of GPL v3\n"
     
 }
 
