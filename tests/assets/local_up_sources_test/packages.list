@@ -3,4 +3,5 @@ conda2 'Package for setting up Conda for python 2'
 conda3 'Package for setting up Conda for Python 3'
 cargo 'Package manager and build system for Rust'
 exa 'exa is a replacement for ls written in Rust'
+test_pkg 'package for use-package.sh tests'
 

@@ -62,6 +62,29 @@ return_val() {
     echo "$value"
 }
 
+####################
+## Internal stuff ##
+####################
+
+__up_setup_env() {
+    unset -f __UP_INIT_FUNC 2>/dev/null
+    unset -f __UP_INSTALL_FUNC 2>/dev/null
+    unset -f __UP_CHECK_FUNC 2>/dev/null
+    unset -f __UP_CONFIG_FUNC 2>/dev/null
+    unset -f __UP_FINALLY_FUNC 2>/dev/null
+
+    # Reset the check accumulator
+    __up_check_result_reset
+}
+
+__up_check_result_reset() {
+    up_check_passed=0
+}
+
+__up_check_result() {
+    return "$up_check_passed"
+}
+
 #################
 ## Backend API ##
 #################
@@ -294,24 +317,6 @@ up_get_source() {
     up_check_source_dir "${dest_dir}"    
 }
 
-# * up_load_sources -- Loads all the sources to up's local directory
-up_load_sources() {
-    # Make sure everything is setup
-    up_setup_sources_dir
-
-    for arg do
-	local exists=$(up_check_cache_for_source "$arg")
-	up_verbose "Checking $arg ... exists=${exists}"
-
-	if [ "${exists}" = "missing" ]; then
-	    up_verbose "Source missing, retrieving..."
-	    up_get_source "$arg"
-	else
-	    up_verbose "Source exists, skipping"
-	fi
-    done
-}
-
 # * up_load_pkg -- Load a single package at the given path
 up_load_pkg_loc() {
     local pkg_loc="$1"
@@ -433,18 +438,57 @@ up_find_package() {
     local package_name="$1"
     
     local result="missing"
-    for arg; do
-	while read -r line; do
-	    # Right now everything after the first field in every line
-	    # is expected to be a package id, in future when more
-	    # fields will get added, things will be more complicated
-	    # to parse.
-	    local source_id=$(echo "$line" | cut -d " " -f 2-)
-	    
-	    up_verbose "Looking in source ${source_id}"
-	    result="$(up_find_package_in_source "${package_name}" "${source_id}")"
-	done < "${UP_SOURCES_LIST}"
-    done
+    while read -r line; do
+	# Right now everything after the first field in every line
+	# is expected to be a package id, in future when more
+	# fields will get added, things will be more complicated
+	# to parse.
+	local source_id=$(echo "$line" | cut -d " " -f 2-)
+	
+	up_verbose "Looking in source ${source_id}"
+	result="$(up_find_package_in_source "${package_name}" "${source_id}")"
+    done < "${UP_SOURCES_LIST}"
 
     return_val "${result}"
+}
+
+  ##################
+  ## Frontend API ##
+  ##################
+
+# * up_load_sources -- Loads all the sources to up's local directory
+up_load_sources() {
+    # Make sure everything is setup
+    up_setup_sources_dir
+
+    for arg do
+	local exists=$(up_check_cache_for_source "$arg")
+	up_verbose "Checking $arg ... exists=${exists}"
+
+	if [ "${exists}" = "missing" ]; then
+	    up_verbose "Source missing, retrieving..."
+	    up_get_source "$arg"
+	else
+	    up_verbose "Source exists, skipping"
+	fi
+    done
+}
+
+# * up_load_pkg -- Loads specified packages from source
+up_load_pkg() {
+
+    for arg; do
+	up_verbose "Loading package '${arg}'..."
+
+	local pkg_loc="$(up_find_package ${arg})"
+
+	if [ "$pkg_loc" = "missing" ]; then
+	    up_fatal "Package '${arg}' not found"
+	fi
+
+	# We found the package, let's load it
+	up_verbose "Found the package at ${pkg_loc}"
+	up_load_pkg_loc "${pkg_loc}"
+    done
+
 }
