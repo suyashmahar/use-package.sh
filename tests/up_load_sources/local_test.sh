@@ -22,7 +22,7 @@ init_fake_home
     . ../src/up.sh
 
     # Setup the sources cache
-    up_setup_sources_dir
+    __up_setup_sources_dir
 
     # Run the target function
     run_up

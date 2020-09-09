@@ -4,9 +4,9 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-############
-## Helper ##
-############
+###################
+## Configuration ##
+###################
 
 # Check if the terminal supports colors, if it is doesn't then disable
 # colors
@@ -32,6 +32,14 @@ if [ -t 1 ]; then
 	UP_WHITE=$(echo -en '\033[01;37m')
     fi
 fi
+
+# If up directory is not specified, set it to $HOME
+if [ -z "${UP_LOC}" ]; then
+    export UP_LOC="$HOME"
+fi
+
+# Configuration variables
+UP_VERSION="1.0.0"
 
 up_say() {
     local msg="$1"
@@ -128,7 +136,7 @@ up_check_passed=0
 #####################
 
 # * UP_LOCAL_CACHE -- Points to the local storage of all the sources
-export UP_LOCAL_CACHE="$HOME/.use-package.sh/cache"
+export UP_LOCAL_CACHE="$UP_LOC/.use-package.sh/cache"
 # * UP_SOURCES_LIST -- Points to a file that stores the list of sources
 export UP_SOURCES_LIST="${UP_LOCAL_CACHE}/sources.list"
 
@@ -141,8 +149,8 @@ up_check_empty() {
     fi
 }
 
-# * up_setup_sources_dir -- Setups the local cache for packages
-up_setup_sources_dir() {
+# * __up_setup_sources_dir -- Setups the local cache for packages
+__up_setup_sources_dir() {
     mkdir -p "$UP_LOCAL_CACHE"
 
     if [ ! -f "$UP_SOURCES_LIST" ]; then
@@ -150,11 +158,11 @@ up_setup_sources_dir() {
     fi
 }
 
-# * up_get_id_from_source -- Convert a use-package source to source id
+# * __up_get_id_from_source -- Convert a use-package source to source id
 #
 # Example:
 #     'git:"https://github.com/suyashmahar/up_sources_stable.git"' -> 'git:up_sources_stable'
-up_get_id_from_source() {
+__up_get_id_from_source() {
     local source=$1
 
     local source_type="$(echo $source | grep -oE '(^network)|(^local)|(^git)')"
@@ -184,15 +192,15 @@ up_get_id_from_source() {
 
 }
 
-# * up_check_cache_for_source -- Checks if a source exists locally
+# * __up_check_cache_for_source -- Checks if a source exists locally
 #
 # Outputs:
 #     'exists': Indicates that the source already exists
 #     'missing': Indicates that the source doesn't exists locally
-up_check_cache_for_source() {
+__up_check_cache_for_source() {
     local source=$1
 
-    local source_id=$(up_get_id_from_source "$source")
+    local source_id=$(__up_get_id_from_source "$source")
     local exists=$(cat "$UP_SOURCES_LIST" | grep -o "$source_id")
 
     local result=""
@@ -205,9 +213,9 @@ up_check_cache_for_source() {
     echo "$result"
 }
 
-# * up_check_source_dir -- Checks a source directory to make sure it is a up
-#                          source directory
-up_check_source_dir() {
+# * __up_check_source_dir -- Checks a source directory to make sure it is a up
+#                            source directory
+__up_check_source_dir() {
     local src_dir=$1
 
     if [ ! -f "${src_dir}/packages.list" ]; then
@@ -264,8 +272,8 @@ up_check_source_dir() {
     
 }
 
-# * up_get_source() -- Retreives local or network package sources
-up_get_source() {
+# * __up_get_source() -- Retreives local or network package sources
+__up_get_source() {
     local source="$1"
     
     source_type="$(echo $source | grep -oE '(^network)|(^local)|(^git)')"
@@ -277,7 +285,7 @@ up_get_source() {
     up_verbose "Getting source of type '$source_type' from '$source_addr_clean'"
 
     # Check if this source already exists
-    local local_avail=$(up_check_cache_for_source "$source")
+    local local_avail=$(__up_check_cache_for_source "$source")
     if [ "$local_avail" = "exists" ]; then
 	up_fatal "Source '$source' already exists"
     fi
@@ -310,64 +318,21 @@ up_get_source() {
     esac
 
     local retrival_time=$(date +%s)
-    local source_id=$(up_get_id_from_source "$source")
+    local source_id=$(__up_get_id_from_source "$source")
     echo "${retrival_time} ${source_id}" >> "${UP_SOURCES_LIST}"
 
     # Check for any configuration error in the source's directory
-    up_check_source_dir "${dest_dir}"    
+    __up_check_source_dir "${dest_dir}"    
 }
 
-# * up_load_pkg -- Load a single package at the given path
-up_load_pkg_loc() {
-    local pkg_loc="$1"
-
-    up_pkg_name=$(basename "$file" | sed 's/.up.sh//g')
-
-    up_verbose "Working on package '${up_pkg_name}'"
-
-    __up_setup_env
-
-    . "$pkg_loc"
-
-    up_verbose "Calling init..."
-    up_init
-
-    up_verbose "Calling check..."
-    up_check
-
-    if ! __up_check_result; then
-	up_verbose "Check failed, trying install..."
-	up_install
-
-	# Reset the check accumulator
-	__up_check_result_reset
-	
-	up_verbose "Calling check again..."
-	up_check
-
-	if ! __up_check_result; then
-	    up_verbose "Install failed to setup environment, not trying anymore..."
-	    return 1
-	fi
-    fi
-
-    up_verbose "Calling config..."
-    up_config
-
-    up_verbose "Calling finally..."
-    up_finally
-
-    up_verbose "Done with $up_pkg_name"
-}
-
-# * up_find_package_in_source -- Finds a package in a cached source directory
+# * __up_find_package_in_source -- Finds a package in a cached source directory
 # Output:
 #     'missing': If this package was not found in any of the sources
 #     <path to package>: Path to the first latest version of the first package
 #                        found
 # TODO:
 #     Check @ref up_find_package
-up_find_package_in_source() {
+__up_find_package_in_source() {
     local package_name="$1"
     local source_id="$2"
 
@@ -426,7 +391,7 @@ up_find_package_in_source() {
     return_val "${result}"
 }
 
-# * up_find_package -- Finds a package in existing sources
+# * __up_find_package -- Finds a package in existing sources
 # Output:
 #     'missing': If this package was not found in any of the sources
 #     <path to package>: Path to the first latest version of the first package
@@ -434,7 +399,7 @@ up_find_package_in_source() {
 # TODO:
 #     1. Add source selection for packages with same name in different sources
 #     2. Add version selection for package with multiple versions
-up_find_package() {
+__up_find_package() {
     local package_name="$1"
     
     local result="missing"
@@ -446,7 +411,7 @@ up_find_package() {
 	local source_id=$(echo "$line" | cut -d " " -f 2-)
 	
 	up_verbose "Looking in source ${source_id}"
-	result="$(up_find_package_in_source "${package_name}" "${source_id}")"
+	result="$(__up_find_package_in_source "${package_name}" "${source_id}")"
     done < "${UP_SOURCES_LIST}"
 
     return_val "${result}"
@@ -459,15 +424,15 @@ up_find_package() {
 # * up_load_sources -- Loads all the sources to up's local directory
 up_load_sources() {
     # Make sure everything is setup
-    up_setup_sources_dir
+    __up_setup_sources_dir
 
     for arg do
-	local exists=$(up_check_cache_for_source "$arg")
+	local exists=$(__up_check_cache_for_source "$arg")
 	up_verbose "Checking $arg ... exists=${exists}"
 
 	if [ "${exists}" = "missing" ]; then
 	    up_verbose "Source missing, retrieving..."
-	    up_get_source "$arg"
+	    __up_get_source "$arg"
 	else
 	    up_verbose "Source exists, skipping"
 	fi
@@ -480,7 +445,7 @@ up_load_pkg() {
     for arg; do
 	up_verbose "Loading package '${arg}'..."
 
-	local pkg_loc="$(up_find_package ${arg})"
+	local pkg_loc="$(__up_find_package ${arg})"
 
 	if [ "$pkg_loc" = "missing" ]; then
 	    up_fatal "Package '${arg}' not found"
@@ -492,3 +457,71 @@ up_load_pkg() {
     done
 
 }
+
+# * Takes a package name and finds it in the existing sources
+# Output:
+#     Human friendly string describing the package found
+up_locate_pkg() {
+    local pkg_name=$1
+
+    local pkg_loc="$(__up_find_package ${arg})"
+
+    if [ "$pkg_loc" = "missing" ]; then
+	up_say "Package not found in any of the sources"
+    else
+	up_say "Found at '${pkg_log}'"
+    fi
+}
+
+# * up_help -- Prints a help message
+up_help() {
+    local cmd_fmt="%-20s:%s"
+    printf "%s\n\n${cmd_fmt}" \
+	   "use-package.sh v${UP_VERSION} -- A package manager for shellrc files"\
+	   "up_locate_pkg <pkg name>" "Locates a package in the locally installed sources"
+    
+}
+
+# * up_load_pkg -- Load a single package at the given path
+up_load_pkg_loc() {
+    local pkg_loc="$1"
+
+    up_pkg_name=$(basename "$file" | sed 's/.up.sh//g')
+
+    up_verbose "Working on package '${up_pkg_name}'"
+
+    __up_setup_env
+
+    . "$pkg_loc"
+
+    up_verbose "Calling init..."
+    up_init
+
+    up_verbose "Calling check..."
+    up_check
+
+    if ! __up_check_result; then
+	up_verbose "Check failed, trying install..."
+	up_install
+
+	# Reset the check accumulator
+	__up_check_result_reset
+	
+	up_verbose "Calling check again..."
+	up_check
+
+	if ! __up_check_result; then
+	    up_verbose "Install failed to setup environment, not trying anymore..."
+	    return 1
+	fi
+    fi
+
+    up_verbose "Calling config..."
+    up_config
+
+    up_verbose "Calling finally..."
+    up_finally
+
+    up_verbose "Done with $up_pkg_name"
+}
+

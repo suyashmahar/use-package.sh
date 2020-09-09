@@ -3,10 +3,10 @@
 . ./common.sh
 
 run_up() {
-    up_get_source \
+    __up_get_source \
         'local:'$(pwd)'/assets/local_up_sources_test' \
         >/dev/null
-    up_get_source \
+    __up_get_source \
         'local:'$(pwd)'/assets/local_up_sources_test' \
         >/dev/null 2>&1
 }
@@ -26,7 +26,7 @@ init_fake_home
     . ../src/up.sh
 
     # Setup the sources cache
-    up_setup_sources_dir
+    __up_setup_sources_dir
 
     # Run the target function
     run_up

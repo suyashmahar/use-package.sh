@@ -3,7 +3,7 @@
 . ./common.sh
 
 run_up() {
-    HOME="$REAL_HOME" up_get_source \
+    HOME="$REAL_HOME" __up_get_source \
         'git:"/home/s/git/up_sources_stable"' \
         >/dev/null
 }
@@ -20,7 +20,7 @@ init_fake_home
     . ../src/up.sh
 
     # Setup the sources cache
-    up_setup_sources_dir
+    __up_setup_sources_dir
 
     # Run the target function
     run_up

@@ -9,7 +9,7 @@ run_up() {
 }
 
 check_up() {
-    local pkg_loc="$(up_find_package "conda2")"
+    local pkg_loc="$(__up_find_package "conda2")"
 
     local expected="${TMPDIR}/use_package_fake_home/.use-package.sh/cache/local_up_sources_test.local/packages/conda2/1.0.0/contents/pkg.up.sh"
     if [ "$pkg_loc" != "$expected" ]; then
@@ -24,7 +24,7 @@ init_fake_home
     . ../src/up.sh
 
     # Setup the sources cache
-    up_setup_sources_dir
+    __up_setup_sources_dir
 
     # Run the target function
     run_up
