@@ -497,11 +497,12 @@ up_help() {
     local cmd_fmt="        %-${UP_PRM_SPAC}s%s${UP_RESET}"
     printf "${UP_PURPLE}use-package.sh v${UP_VERSION}${UP_RESET} -- A package manager for shellrc files\n"
     printf "\n  Usage:\n"
-    printf "${cmd_fmt}\n${cmd_fmt}\n${cmd_fmt}\n${cmd_fmt}\n${cmd_fmt}\n" \
+    printf "${cmd_fmt}\n${cmd_fmt}\n${cmd_fmt}\n${cmd_fmt}\n${cmd_fmt}\n${cmd_fmt}\n" \
 	   "up_load_sources ${UP_CYAN}src [src [...] ]${UP_RESET}" "Retreives and saves specified source(s) locally" \
 	   "up_load_pkgs ${UP_CYAN}pkg [pkg [...] ]${UP_RESET}" "Loads specified package(s) from the locally installed sources" \
 	   "up_load_pkg_loc ${UP_CYAN}/path/to/pkg${UP_RESET}" "Load package located at the specified path. Path should point to a pkg.up.sh file." \
 	   "up_locate_pkg ${UP_CYAN}pkg${UP_RESET}" "Finds a package in the locally installed sources" \
+	   "up_list_pkgs ${UP_CYAN}${UP_RESET}" "List all locally installed packages" \
 	   "up_help ${UP_CYAN}${UP_RESET}" "Show this message and exit"
     
     printf "\n  Example configuration:\n"
@@ -572,3 +573,41 @@ up_load_pkg_loc() {
     up_verbose "Done with $up_pkg_name"
 }
 
+# * up_list_pkgs -- List all the locally available packages with their description
+up_list_pkgs() {
+    
+    local pkg_cnt=0
+    local src_cnt=0
+    while read -r source; do
+	src_cnt=$((src_cnt+1))
+	# Right now everything after the first field in every line
+	# is expected to be a package id, in future when more
+	# fields will get added, things will be more complicated
+	# to parse.
+	local source_id=$(echo "$source" | cut -d " " -f 2-)
+
+	local source_type="$(echo $source_id | cut -d ':' -f 1)"
+	local source_name="$(echo $source_id | cut -d ':' -f 2-)"
+
+	up_verbose "Looking in source ${source_id}"
+	printf "Source '${source_id}':\n"
+	
+	local pkgs_list="${UP_LOCAL_CACHE}/${source_name}.${source_type}/packages.list"
+	while read -r pkg; do
+	    pkg_cnt=$((pkg_cnt+1))
+
+
+	    if ! echo "$pkg" | grep -Eq '^#'; then
+		local pkg_details=$(printf "%s" "$pkg" | xargs -n 1 printf "%s\n")
+
+		local pkg_name="$(echo "$pkg_details" | head -n1)"
+		local pkg_desc="$(echo "$pkg_details" | head -n2 | tail -n1)"
+
+		printf "  %-40s %s" "$pkg_name" "$pkg_desc"
+		printf "\n"
+	    fi
+	done < "${pkgs_list}"
+    done < "${UP_SOURCES_LIST}"
+
+    printf "Total %d package(s) available in %d source(s)\n" $pkg_cnt $src_cnt
+}
