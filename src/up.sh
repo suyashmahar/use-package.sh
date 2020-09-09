@@ -179,6 +179,7 @@ __up_get_id_from_source() {
 	    source_id="$(echo $source_name | sed 's/.git//')"
             ;;
         'network')
+	    source_id="$(echo $source_name | sed 's/.tar.gz//')"
             ;;
         'local')
 	    source_id="${source_name}"
@@ -189,7 +190,6 @@ __up_get_id_from_source() {
     esac
 
     echo "${source_type}:${source_id}"
-
 }
 
 # * __up_check_cache_for_source -- Checks if a source exists locally
@@ -301,8 +301,17 @@ __up_get_source() {
 		up_fatal "Cannot clone '$source_addr_clean', make sure you have access to the repository"
 	    }
             ;;
-        'network')
+
+	'network')
+	    dest_dir="${UP_LOCAL_CACHE}/${source_name}.network"
+	    
+	    wget -qO- "${source_addr_clean}" | tar xvz - -C "${dest_dir}"
+	    
+	    if [ ! -d "${dest_dir}" ]; then
+		up_fatal "Unable to retreive '$source_addr_clean', output directory not created"
+	    fi
             ;;
+	
         'local')
 	    if [ ! -d "${source_addr_clean}" ]; then
 		up_fatal "Source directory '$source_addr_clean' not found"
@@ -312,7 +321,8 @@ __up_get_source() {
 	    
 	    cp -r "${source_addr_clean}" "${dest_dir}"
             ;;
-        *)
+
+	*)
 	    up_fatal "Unknown protocol '$source_type'"
             ;;
     esac
@@ -439,8 +449,8 @@ up_load_sources() {
     done
 }
 
-# * up_load_pkg -- Loads specified packages from source
-up_load_pkg() {
+# * up_load_pkgs -- Loads specified packages from source
+up_load_pkgs() {
 
     for arg; do
 	up_verbose "Loading package '${arg}'..."

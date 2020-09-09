@@ -6,3 +6,10 @@ if [ ! -f "$HOME/.use-package.sh/up.sh" ]; then
 fi
 
 . "$HOME/.use-package.sh/up.sh"
+
+# Load the packages
+up_load_sources \
+    network:"https://codeload.github.com/suyashmahar/up_sources_stable/tar.gz/0.1b?token=AFA6VT5LILIB5WY7OBWBJUK7LCS5E"
+
+up_load_pkgs \
+    cargo
