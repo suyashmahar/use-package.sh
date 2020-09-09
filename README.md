@@ -44,6 +44,7 @@ up_load_package \
 3. (Optional) You can create your own packages and load them:
 <details>
 You can create your own packages using use-package's syntax. To create a new package, modify the following template on disk:
+	
 ```shell
 #!/usr/bin/env sh
 
