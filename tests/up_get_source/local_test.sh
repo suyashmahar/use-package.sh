@@ -2,13 +2,13 @@
 
 . ./common.sh
 
-function run_up() {
+run_up() {
     up_get_source \
         'local:'$(pwd)'/assets/local_up_sources_test' \
         >/dev/null
 }
 
-function check_up() {
+check_up() {
     if [ ! -d "${HOME}/.use-package.sh/cache/local_up_sources_test.local" ]; then
         test_failed "$0"
     fi

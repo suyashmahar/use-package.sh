@@ -2,7 +2,7 @@
 
 . ./common.sh
 
-function run_up() {
+run_up() {
     up_get_source \
         'local:'$(pwd)'/assets/local_up_sources_test' \
         >/dev/null
@@ -11,7 +11,7 @@ function run_up() {
         >/dev/null 2>&1
 }
 
-function check_up() {
+check_up() {
     local expected_hash="74b2f7c4f51b20e6c5805f8de4b89100"
     local result_hash=$(md5sum "${HOME}/.use-package.sh/cache/sources.list" | awk '{ print $1 }')
 

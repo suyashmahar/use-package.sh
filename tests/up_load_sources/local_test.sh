@@ -2,7 +2,7 @@
 
 . ./common.sh
 
-function run_up() {
+run_up() {
     up_load_sources \
         local:"$(pwd)/assets/local_up_sources_test" \
 	local:"$(pwd)/assets/local_up_sources_test" \
@@ -10,7 +10,7 @@ function run_up() {
         >/dev/null
 }
 
-function check_up() {
+check_up() {
     if [ ! -d "${HOME}/.use-package.sh/cache/local_up_sources_test.local" ]; then
         test_failed "$0"
     fi

@@ -2,13 +2,13 @@
 
 . ./common.sh
 
-function run_up() {
+run_up() {
     # Load the default test source
     up_load_sources \
         local:"$(pwd)/assets/local_up_sources_test"
 }
 
-function check_up() {
+check_up() {
     local pkg_loc="$(up_find_package "conda2")"
 
     local expected="${TMPDIR}/use_package_fake_home/.use-package.sh/cache/local_up_sources_test.local/packages/conda2/1.0.0/contents/pkg.up.sh"

@@ -2,7 +2,7 @@
 
 . ./common.sh
 
-function run_up() {
+run_up() {
     # Load the default test source
     up_load_sources \
         local:"$(pwd)/assets/local_up_sources_test"
@@ -10,7 +10,7 @@ function run_up() {
 	test_pkg
 }
 
-function check_up() {
+check_up() {
     local pkg_loc="$(up_find_package "conda2")"
 
     local expected="success"

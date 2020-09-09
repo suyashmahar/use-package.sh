@@ -2,13 +2,13 @@
 
 . ./common.sh
 
-function run_up() {
+run_up() {
     HOME="$REAL_HOME" up_get_source \
         'git:"/home/s/git/up_sources_stable"' \
         >/dev/null
 }
 
-function check_up() {
+check_up() {
     if [ ! -d "${HOME}/.use-package.sh/cache/up_sources_stable" ]; then
         test_failed "$0"
     fi
