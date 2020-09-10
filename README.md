@@ -59,16 +59,22 @@ insert image here
 
 ## Packages available
 The following packages are available in use-package.sh's [default respository](https://github.com/suyashmahar/up_sources_stable)
-%### Common
+
+### Common
+
 * [conda3]()
 * [conda2]()
 * [cargo]()
 * [cargo-goodies]()
+
 #### Zsh specific
+
 * [oh-my-zsh]()
 * [zsh-auto-suggestions]()
 * [zsh-syntax-highlighting]()
+
 #### Bash specific
+
 * [oh-my-bash]()
 
 ## FAQ
