@@ -1,3 +1,8 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#
+# (C) Copyright 2020 Suyash Mahar
 
 # Setup the environment variable to prevent up from executing directly
 if [ "$TMPDIR" = "" ]; then
