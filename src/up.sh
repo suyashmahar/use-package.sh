@@ -43,6 +43,9 @@ if [ -z "${UP_LOC}" ]; then
     export UP_LOC="$HOME"
 fi
 
+# Configure sudo if it is available
+command -v sudo &> /dev/null && export UP_SUDO="sudo"
+
 # Configuration variables
 UP_VERSION="1.0.0"
 
@@ -129,6 +132,41 @@ up_ensure() {
     if ! type "$cmd" > /dev/null; then
 	up_notify_check_fail
     fi
+}
+
+# * up_is_os -- Returns 0 on a match with an OS type. Options supported:
+#               1. termux: Termux on Android
+#               2. ubuntu: Ubuntu
+up_match_os() {
+    os="$1"
+
+    if [ -z "$os" ]; then
+	up_fatal "up_match_os expects exactly 1 argument"
+    fi
+
+    result=1
+    
+    case "$os" in
+	"termux")
+	    echo "$PREFIX" | grep -q "com.termux"
+	    result=$?
+	    ;;
+	"ubuntu")
+	    awk -F= '/^NAME/{print $2}' /etc/os-release | grep -q "\"Ubuntu\""
+	    result=$?
+	    ;;
+	*)
+	    up_fatal "Unsupported os type '$os'"
+	    ;;
+    esac
+    
+    return result
+}
+
+# * up_is_termux -- Returns 0 if current OS is Termux (Android)
+up_is_termux() {
+    echo "$PREFIX" | grep -s "com.termux"
+    return $?
 }
 
 # * up_check_passed -- Holds the status of the checks executed so far, only
