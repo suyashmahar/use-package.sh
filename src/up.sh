@@ -7,6 +7,58 @@
 # (C) Copyright 2020 Suyash Mahar
 
 ###################
+## Example       ##
+###################
+
+nl="
+"
+
+read_heredoc(){
+    var=""
+    while IFS="$nl" read -r line; do
+        var="$var$line$nl"
+    done 
+}
+
+
+read_heredoc <<'HEREDOC'
+#!/usr/bin/env sh
+
+# * up_init -- Initialize things before executing anything for this
+#              package
+up_init() {
+    up_nop
+}
+
+# * up_install -- Installs this package if requested
+up_install() {
+    if up_match_os "termux"; then
+	pkg install cargo
+    else
+	"$UP_SUDO" apt-get install -y cargo
+    fi
+}
+
+# * up_check -- Checks it this package can be loaded 
+up_check() {
+    up_ensure "cargo"
+}
+
+# * up_config -- Configures everything for this package, aliases,
+#                variables, functions ...
+up_config() {
+    export PATH="$HOME/.cargo/bin:$PATH"
+}
+
+up_finally() {
+    :;
+}
+
+HEREDOC
+
+EXAMPLE_UP_SH="$var"
+
+###################
 ## Configuration ##
 ###################
 
@@ -105,7 +157,8 @@ __up_check_result() {
 ## Backend API ##
 #################
 
-# * up_notify_check_fail -- Notify up from package script about failed check
+# * up_notify_check_fail -- Notify up from package script about failed
+#                           check
 up_notify_check_fail() {
     local add_info=$1
     
@@ -114,7 +167,8 @@ up_notify_check_fail() {
     up_check_passed=1
 }
 
-# * up_notify_done -- Notify up from package script about successful completion
+# * up_notify_done -- Notify up from package script about successful
+#                     completion
 up_notify_done() {
     echo "Done with package $up_cur_pkg"
 }
@@ -152,7 +206,8 @@ up_match_os() {
 	    result=$?
 	    ;;
 	"ubuntu")
-	    awk -F= '/^NAME/{print $2}' /etc/os-release | grep -q "\"Ubuntu\""
+	    awk -F= '/^NAME/{print $2}' /etc/os-release \
+		| grep -q "\"Ubuntu\""
 	    result=$?
 	    ;;
 	*)
@@ -169,9 +224,9 @@ up_is_termux() {
     return $?
 }
 
-# * up_check_passed -- Holds the status of the checks executed so far, only
-#                      valid during package execution, 0 -> all passed,
-#                      1 -> at least one failed
+# * up_check_passed -- Holds the status of the checks executed so far,
+#                      only valid during package execution, 0 -> all
+#                      passed, 1 -> at least one failed
 up_check_passed=0
 
 #####################
@@ -180,7 +235,8 @@ up_check_passed=0
 
 # * UP_LOCAL_CACHE -- Points to the local storage of all the sources
 export UP_LOCAL_CACHE="$UP_LOC/.use-package.sh/cache"
-# * UP_SOURCES_LIST -- Points to a file that stores the list of sources
+# * UP_SOURCES_LIST -- Points to a file that stores the list of
+#                      sources
 export UP_SOURCES_LIST="${UP_LOCAL_CACHE}/sources.list"
 
 # * up_check_args -- Check if the input argument is empty
@@ -201,10 +257,12 @@ __up_setup_sources_dir() {
     fi
 }
 
-# * __up_get_id_from_source -- Convert a use-package source to source id
+# * __up_get_id_from_source -- Convert a use-package source to source
+#                              id
 #
 # Example:
-#     'git:"https://github.com/suyashmahar/up_sources_stable.git"' -> 'git:up_sources_stable'
+#     'git:"https://github.com/suyashmahar/up_sources_stable.git"' ->
+#     'git:up_sources_stable'
 __up_get_id_from_source() {
     local source=$1
 
@@ -256,8 +314,8 @@ __up_check_cache_for_source() {
     echo "$result"
 }
 
-# * __up_check_source_dir -- Checks a source directory to make sure it is a up
-#                            source directory
+# * __up_check_source_dir -- Checks a source directory to make sure it
+#                            is a up source directory
 __up_check_source_dir() {
     local src_dir=$1
 
@@ -266,7 +324,8 @@ __up_check_source_dir() {
     fi
 
     if [ ! -d "${src_dir}/packages" ]; then
-	up_fatal "Directory '${src_dir}' does not have a 'packages' sub directory"
+	up_fatal "Directory '${src_dir}' " \
+		 "does not have a 'packages' sub directory"
     fi
 
     # Read every line of packages.list file and check if corresponding
@@ -340,7 +399,8 @@ __up_get_source() {
         'git')
 	    dest_dir="${UP_LOCAL_CACHE}/${source_name}"
 
-	    # Append a '.git' at the end if source_name doesn't end with that
+	    # Append a '.git' at the end if source_name doesn't end
+	    # with that
 	    if ! echo "$source_name"  | grep -Eq '.git$'; then
 		source_name="${source_name}.git"
 		dest_dir="${dest_dir}.git"
@@ -435,7 +495,7 @@ __up_find_package_in_source() {
 
 		up_verbose "Found version '${latest_version}'"
 		
-		local loader_file="${package_dir}/${latest_version}/contents/pkg.up.sh"
+		local loader_file="${package_dir}/${latest_version}/contents/pkg.up.sh" 
 		if [ ! -f "${loader_file}" ]; then
 		    up_fatal "Cannot find '${loader_file}', source corrupted?"
 		fi
@@ -453,11 +513,13 @@ __up_find_package_in_source() {
 # * __up_find_package -- Finds a package in existing sources
 # Output:
 #     'missing': If this package was not found in any of the sources
-#     <path to package>: Path to the first latest version of the first package
-#                        found
+#     <path to package>: Path to the first latest version of the first
+#                        package found
 # TODO:
-#     1. Add source selection for packages with same name in different sources
-#     2. Add version selection for package with multiple versions
+#     1. Add source selection for packages with same name in different
+#        sources
+#     2. Add version selection for package with multiple
+#        versions
 __up_find_package() {
     local package_name="$1"
     
@@ -532,11 +594,45 @@ up_locate_pkg() {
     fi
 }
 
+# * up_create_pkg -- Creates a new package at CWD
+up_create_pkg() {
+    pkg_name=$1
+    pkg_description=$2
+    pkg_version=$3
+
+    if [ -z "$pkg_name" ]; then
+	printf "Package name > "
+	read pkg_name
+	[ -z "$pkg_name" ] \
+	    && { echo "Need a package name to continue"; return; }
+    fi
+
+    if [ -z "$pkg_description" ]; then
+	printf "Short package description [Default: empty] > "
+	read pkg_description
+	[ -z "$pkg_description" ] && pkg_description="empty"
+    fi
+
+    if [ -z "$pkg_version" ]; then
+	printf "Package version [Default: 1.0.0] > "
+	read pkg_version
+	[ -z "$pkg_version" ] && pkg_version="1.0.0"
+    fi
+
+    content_d="packages/${pkg_name}/${pkg_version}/contents"
+    mkdir -p "${content_d}" && \
+	echo "$EXAMPLE_UP_SH" > "${content_d}/pkg.up.sh" && \
+	echo "Package created at ${content_f}" || {
+	    echo "Package creation failed"
+	    return 1
+	}
+}
+
 # * up_help -- Prints a help message
 up_help() {
     local cmd_fmt="        %-${UP_PRM_SPAC}s%s${UP_RESET}"
     printf "${UP_PURPLE}use-package.sh v${UP_VERSION}${UP_RESET} -- A package manager for shellrc files\n"
-    printf "\n  Usage:\n"
+    printf "\nUSAGE\n"
     printf "${cmd_fmt}\n${cmd_fmt}\n${cmd_fmt}\n${cmd_fmt}\n${cmd_fmt}\n${cmd_fmt}\n" \
 	   "up_load_sources ${UP_CYAN}src [src [...] ]${UP_RESET}" "Retreives and saves specified source(s) locally" \
 	   "up_load_pkgs ${UP_CYAN}pkg [pkg [...] ]${UP_RESET}" "Loads specified package(s) from the locally installed sources" \
@@ -545,27 +641,12 @@ up_help() {
 	   "up_list_pkgs ${UP_CYAN}${UP_RESET}" "List all locally installed packages" \
 	   "up_help ${UP_CYAN}${UP_RESET}" "Show this message and exit"
     
-    printf "\n  Example configuration:\n"
-    cat << EOF
-        # Setup use-package.sh
-        if [ ! -f "\$HOME/.use-package.sh/up.sh" ]; then
-            mkdir -p "\$HOME/.use-package.sh"
-            cp "/path/to/original/up.sh" "\$HOME/.use-package.sh/up.sh"
-        fi
-           
-        . "\$HOME/.use-package.sh/up.sh"
-           
-        # Load the packages
-        up_load_sources \\
-            git:"https://github.com/suyashmahar/up_sources_stable.git"
-    	   
-        up_load_pkgs \\
-            cargo
-EOF
-    printf "\n  More help:\n"
+    printf "\nEXAMPLE CONFIGURATION\n\n"
+    printf "$EXAMPLE_UP_SH" | sed 's/^/\t\t/g'
+    printf "MORE HELP\n"
     printf "      For more detailed documentation go to: https://github.com/suyashmahar/use-package.sh\n"
-    
-    printf "\n  License:\n"
+    printf "\n"
+    printf "LICENSE\n"
     printf "      (c) 2020 Suyash Mahar. use-package.sh, including this script is licensed under the terms of GPL v3\n"
     
 }
