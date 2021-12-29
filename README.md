@@ -36,25 +36,25 @@ up_load_sources \
     git:"https://github.com/suyashmahar/up_sources_stable.git"
 
 # Load selected packages
-up_load_package \
+up_load_pkgs \
     cargo \
     conda3
 ```
 
 3. (Optional) You can create your own packages and load them:
 <details>
-    <hr>
+<hr>
 
-        To create a new package, you'd first need to create your
-        own source using the command `up_create_source`. This will
-        create a new source in the current directory. You'd want to 
-        store this package in a git repo.
+To create a new package, you'd first need to create your
+own source using the command `up_create_source`. This will
+create a new source in the current directory. You'd want to 
+store this package in a git repo.
         
-        Next step, create a new package using the command `up_create_pkg`.
+Next step, create a new package using the command `up_create_pkg`.
         
-        To edit the newly create package, use the command `up_edit` to edit
-        this package.
-    <hr>
+To edit the newly create package, use the command `up_edit` to edit
+this package.
+<hr>
 </details>
 
 And, voila your .${SHELL}rc is ready!
@@ -62,7 +62,7 @@ And, voila your .${SHELL}rc is ready!
 Your shell's rc file should look like:  
 insert image here
 
-*To create your own sources check the wiki!*
+use-package.sh has more commands available, checkout `up_help | Less`
 
 ## Packages available
 The following packages are available in use-package.sh's [default respository](https://github.com/suyashmahar/up_sources_stable)
