@@ -4,7 +4,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #
-# (C) Copyright 2020 Suyash Mahar
+# (C) Copyright 2020-21 Suyash Mahar
 
 . ./common.sh
 
@@ -12,7 +12,7 @@ run_up() {
     # Load the default test source
     up_load_sources \
         local:"$(pwd)/assets/local_up_sources_test"
-    up_load_pkg \
+    up_load_pkgs \
 	test_pkg
 }
 

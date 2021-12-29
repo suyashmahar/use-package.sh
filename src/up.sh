@@ -4,7 +4,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #
-# (C) Copyright 2020 Suyash Mahar
+# (C) Copyright 2020-21 Suyash Mahar
 
 ###################
 ## Example       ##
@@ -238,6 +238,10 @@ export UP_LOCAL_CACHE="$UP_LOC/.use-package.sh/cache"
 # * UP_SOURCES_LIST -- Points to a file that stores the list of
 #                      sources
 export UP_SOURCES_LIST="${UP_LOCAL_CACHE}/sources.list"
+
+up_verbose "Current home is at ${HOME}"
+up_verbose "up loc is at ${UP_LOC}"
+up_verbose "UP sources list: ${UP_SOURCES_LIST}"
 
 # * up_check_args -- Check if the input argument is empty
 up_check_empty() {
@@ -674,6 +678,10 @@ up_create_pkg() {
 
 # * up_help -- Prints a help message
 up_help() {
+    __up_help_internal | less
+}
+
+__up_help_internal() {
     local cmd_fmt="        %-${UP_PRM_SPAC}s%s${UP_RESET}"
     printf "${UP_PURPLE}use-package.sh v${UP_VERSION}${UP_RESET} -- A package manager for shellrc files\n"
     printf "\nUSAGE\n"
@@ -684,6 +692,7 @@ up_help() {
 	   "up_locate_pkg ${UP_CYAN}pkg${UP_RESET}" "Finds a package in the locally installed sources" \
 	   "up_list_pkgs ${UP_CYAN}${UP_RESET}" "List all locally installed packages" \
 	   "up_create_pkg ${UP_CYAN}${UP_RESET}" "Create a new package in a source" \
+	   "up_create_source ${UP_CYAN}${UP_RESET}" "Create a new source directory in PWD" \
 	   "up_edit ${UP_CYAN}pkg${UP_RESET}" "Edit a package using \$EDITOR" \
 	   "up_help ${UP_CYAN}${UP_RESET}" "Show this message and exit"
     
@@ -693,7 +702,7 @@ up_help() {
     printf "      For more detailed documentation go to: https://github.com/suyashmahar/use-package.sh\n"
     printf "\n"
     printf "LICENSE\n"
-    printf "      (c) 2020 Suyash Mahar. use-package.sh, including this script is licensed under the terms of GPL v3\n"
+    printf "      (c) 2020-21 Suyash Mahar. use-package.sh, including this script is licensed under the terms of MPL v2\n"
     
 }
 

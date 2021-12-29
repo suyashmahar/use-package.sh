@@ -33,21 +33,28 @@ fi
 ```shell
 # Enable use-package.sh's default source
 up_load_sources \
-    network:"https://github.com/suyashmahar/up_sources_stable.git"
+    git:"https://github.com/suyashmahar/up_sources_stable.git"
 
 # Load selected packages
 up_load_package \
     cargo \
-    conda
+    conda3
 ```
 
 3. (Optional) You can create your own packages and load them:
 <details>
-  To create a new package, modify the <a href="examples/pkg.up.sh">package example</a>. and load it using the following command:
-  
-  ```shell
-  up_load_pkg_loc "/path/to/your/package"
-  ```
+    <hr>
+
+        To create a new package, you'd first need to create your
+        own source using the command `up_create_source`. This will
+        create a new source in the current directory. You'd want to 
+        store this package in a git repo.
+        
+        Next step, create a new package using the command `up_create_pkg`.
+        
+        To edit the newly create package, use the command `up_edit` to edit
+        this package.
+    <hr>
 </details>
 
 And, voila your .${SHELL}rc is ready!
