@@ -324,8 +324,7 @@ __up_check_source_dir() {
     fi
 
     if [ ! -d "${src_dir}/packages" ]; then
-	up_fatal "Directory '${src_dir}' " \
-		 "does not have a 'packages' sub directory"
+	up_fatal "Directory '${src_dir}' does not have a 'packages' sub directory"
     fi
 
     # Read every line of packages.list file and check if corresponding
@@ -377,6 +376,8 @@ __up_check_source_dir() {
 # * __up_get_source() -- Retreives local or network package sources
 __up_get_source() {
     local source="$1"
+
+    # TODO: Change local's docs to say symlink instead of cp
     
     source_type="$(echo $source | grep -oE '(^network)|(^local)|(^git)')"
     source_addr="$(echo $source | sed -E 's/(^network:)|(^local:)|(^git:)//')"
@@ -428,7 +429,7 @@ __up_get_source() {
 	    
 	    dest_dir="${UP_LOCAL_CACHE}/${source_name}.local"
 	    
-	    cp -r "${source_addr_clean}" "${dest_dir}"
+	    ln -s "${source_addr_clean}" "${dest_dir}"
             ;;
 
 	*)
@@ -533,6 +534,10 @@ __up_find_package() {
 	
 	up_verbose "Looking in source ${source_id}"
 	result="$(__up_find_package_in_source "${package_name}" "${source_id}")"
+
+        if [ "${result}" != "missing" ]; then
+            break;
+        fi
     done < "${UP_SOURCES_LIST}"
 
     return_val "${result}"
@@ -590,15 +595,51 @@ up_locate_pkg() {
     if [ "$pkg_loc" = "missing" ]; then
 	up_say "Package not found in any of the sources"
     else
-	up_say "Found at '${pkg_log}'"
+	up_say "Found at ${pkg_log}"
     fi
+}
+
+# * up_create_source -- Create a local source
+up_create_source() {
+    src_name=$1
+
+    if [ -z "$pkg_name" ]; then
+	printf "Package name > "
+	read pkg_name
+	[ -z "$pkg_name" ] \
+	    && { echo "Need a package name to continue"; return; }
+    fi
+
+    mkdir -p "${src_name}" || { up_warn "Unable to create source dir."; return 1; }
+    mkdir -p "${src_name}/packages" || { up_warn "Unable to create packages dir."; return 1; }
+
+    touch "${src_name}/packages.list"
 }
 
 # * up_create_pkg -- Creates a new package at CWD
 up_create_pkg() {
-    pkg_name=$1
-    pkg_description=$2
-    pkg_version=$3
+    pkg_source="$1"
+    pkg_name="$2"
+    pkg_description="$3"
+    pkg_version="$4"
+
+    local pkg_source_path=
+
+    if [ -z "$pkg_source" ]; then
+	printf "Package source > "
+	read pkg_source
+	[ -z "$pkg_source" ] \
+	    && { echo "Need a package source name to continue"; return; }
+    fi
+
+    pkg_source_path=`ls -d ${UP_LOCAL_CACHE}/${pkg_source}* | head -n1` 2>/dev/null
+
+    if [ -z "${pkg_source_path}" ]; then 
+        up_warn "No such source found.";
+        return 1;
+    fi
+
+    up_verbose "Using source ${pkg_source_path}"
 
     if [ -z "$pkg_name" ]; then
 	printf "Package name > "
@@ -619,9 +660,12 @@ up_create_pkg() {
 	[ -z "$pkg_version" ] && pkg_version="1.0.0"
     fi
 
-    content_d="packages/${pkg_name}/${pkg_version}/contents"
+    content_d="${pkg_source_path}/packages/${pkg_name}/${pkg_version}/contents"
+    up_verbose "Creating directory ${content_d}"
+
     mkdir -p "${content_d}" && \
 	echo "$EXAMPLE_UP_SH" > "${content_d}/pkg.up.sh" && \
+        echo "${pkg_name} '${pkg_description}'" >> "${pkg_source_path}/packages.list" && \
 	echo "Package created at ${content_f}" || {
 	    echo "Package creation failed"
 	    return 1
@@ -639,9 +683,11 @@ up_help() {
 	   "up_load_pkg_loc ${UP_CYAN}/path/to/pkg${UP_RESET}" "Load package located at the specified path. Path should point to a pkg.up.sh file." \
 	   "up_locate_pkg ${UP_CYAN}pkg${UP_RESET}" "Finds a package in the locally installed sources" \
 	   "up_list_pkgs ${UP_CYAN}${UP_RESET}" "List all locally installed packages" \
+	   "up_create_pkg ${UP_CYAN}${UP_RESET}" "Create a new package in a source" \
+	   "up_edit ${UP_CYAN}pkg${UP_RESET}" "Edit a package using \$EDITOR" \
 	   "up_help ${UP_CYAN}${UP_RESET}" "Show this message and exit"
     
-    printf "\nEXAMPLE CONFIGURATION\n\n"
+    printf "\nEXAMPLE CONFIGURATION\n"
     printf "$EXAMPLE_UP_SH" | sed 's/^/\t\t/g'
     printf "MORE HELP\n"
     printf "      For more detailed documentation go to: https://github.com/suyashmahar/use-package.sh\n"
@@ -731,4 +777,27 @@ up_list_pkgs() {
     done < "${UP_SOURCES_LIST}"
 
     printf "Total %d package(s) available in %d source(s)\n" $pkg_cnt $src_cnt
+}
+
+up_edit() {
+    local pkg_name="$1"
+
+    local pkg_loc="$(__up_find_package ${pkg_name})"
+    local up_editor="${EDITOR:-`which nano`}"
+
+
+    if [ "$pkg_loc" = "missing" ]; then
+        up_warn "Package $pkg_name not found";
+        return 1;
+    fi
+
+    up_verbose "Using editor ${up_editor}"
+
+    [ -e "$up_editor" ] || { up_warn "Editor ${up_editor} not found. Set \$EDITOR"; return 1; }
+
+    up_say "Opening ${pkg_loc}"
+
+    "${up_editor}" "${pkg_loc}"
+
+    up_say "Done."
 }
